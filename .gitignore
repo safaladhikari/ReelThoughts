@@ -1,0 +1,10 @@
+# ignore build directory
+build/
+
+# ignore .DS_Store
+.DS_Store
+
+# ignore Eclipse setup
+.classpath
+.project
+.settings/

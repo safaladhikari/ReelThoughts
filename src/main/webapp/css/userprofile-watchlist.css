@@ -1,0 +1,309 @@
+@charset "UTF-8";
+/* General Styling */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+}
+body {
+    font-family: 'Arial', sans-serif;
+    background-color: #000000;
+    margin: 0;
+    padding: 0;
+    color: #333;
+}
+
+/* Header Styles */
+header {
+    background-color: #004000;
+    color: white;
+    padding: 1rem 0;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.navbar {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.logo {
+    font-size: 1.8rem;
+    font-weight: bold;
+    color: white;
+}
+
+.nav-links {
+    display: flex;
+    gap: 1.5rem;
+}
+
+.nav-links a {
+    color: white;
+    text-decoration: none;
+    font-weight: 500;
+    padding: 0.5rem 0;
+    position: relative;
+    transition: color 0.3s ease;
+}
+
+/* Underline Slide-In Animation */
+.nav-links a::after {
+    content: '';
+    position: absolute;
+    width: 0;
+    height: 2px;
+    bottom: 0;
+    left: 50%;
+    background-color: #ffffff;
+    transition: width 0.3s ease, left 0.3s ease;
+}
+
+.nav-links a:hover::after {
+    width: 100%;
+    left: 0;
+}
+
+.nav-links a:hover {
+    color: #ffffff;
+}
+
+.search-bar {
+    flex: 1;
+    max-width: 400px;
+    margin: 0 2rem;
+}
+
+.search-bar input {
+    width: 100%;
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    background-color: rgba(255,255,255,0.9);
+}
+/* Profile Info in Page Header */
+.header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.user-profile-box {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background-color: #ffffff;
+    padding: 0.4rem 0.8rem;
+    border-radius: 20px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+.user-profile-box img {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #004000;
+}
+
+.user-profile-box span {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #004000;
+}
+
+/* Responsive tweak for small screens */
+@media (max-width: 600px) {
+    .header-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+}
+
+/* ================================= 
+  Media Queries
+==================================== */
+@media ( min-width : 769px) {
+	.header, .main-nav {
+		display: flex;
+	}
+	.header {
+		flex-direction: column;
+		align-items: center;
+	}
+	.header {
+		width: 100%;
+		margin: 0 auto;
+	}
+}
+
+@media ( min-width : 1025px) {
+	.header {
+		flex-direction: row;
+		justify-content: space-between;
+	}
+}
+
+/* Container */
+.recent-releases-container {
+    max-width: 1200px;
+    margin: 2rem auto;
+    padding: 0 1rem;
+}
+
+/* Page Title */
+/* Page Header Styles */
+.page-header {
+    text-align: left;
+    margin-bottom: 2rem;
+    padding: 0 1rem;
+}
+
+.page-title {
+    display: inline-block;
+    margin-left: 0;
+    transform: none;
+    text-align: left;
+    color: #ffffff;
+    font-size: 2.5rem;
+    border-bottom: 3px solid #004000;
+    padding-bottom: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.page-subtext {
+    color: #aaaaaa;
+    font-size: 1rem;
+    line-height: 1.5;
+    max-width: 800px;
+}
+
+/* Watchlist Section */
+.watchlist-section {
+    max-width: 1200px;
+    margin: 3rem auto;
+    padding: 2.5rem 2rem;
+    background-color: #111111;
+    border-radius: 12px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+}
+
+.watchlist-title {
+    font-size: 2.2rem;
+    color: #ffffff;
+    margin-bottom: 2rem;
+    border-left: 6px solid #004000;
+    padding-left: 1.2rem;
+}
+
+.watchlist-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 2rem;
+}
+
+.watchlist-card {
+    background-color: #ffffff;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.25);
+    transition: transform 0.3s ease;
+}
+
+.watchlist-card:hover {
+    transform: translateY(-6px);
+}
+
+.watchlist-poster {
+    width: 100%;
+    height: 260px;
+    object-fit: cover;
+}
+
+.watchlist-info {
+    padding: 1.2rem;
+}
+
+.watchlist-title-text {
+    font-size: 1.25rem;
+    font-weight: bold;
+    margin-bottom: 0.6rem;
+    color: #004000;
+}
+
+.watchlist-meta {
+    font-size: 0.95rem;
+    color: #444444;
+    margin-bottom: 0.3rem;
+}
+
+/* Movie Grid */
+.movie-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 2rem;
+    padding: 1rem;
+}
+
+/* Movie Card */
+.movie-card {
+    background: white;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.movie-card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+}
+
+.movie-poster {
+    width: 100%;
+    height: 250px;
+    object-fit: cover;
+    display: block;
+}
+
+.movie-info {
+    padding: 1.2rem;
+}
+
+.movie-title {
+    margin: 0 0 0.5rem 0;
+    font-size: 1.2rem;
+    color: #000000;
+}
+
+.movie-director {
+    margin: 0.3rem 0;
+    font-size: 0.9rem;
+    color: #7f8c8d;
+}
+
+.movie-rating {
+    margin: 0.5rem 0 0 0;
+    font-weight: bold;
+    color: #000000;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+    .movie-grid {
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    }
+}
+
+@media (max-width: 480px) {
+    .movie-grid {
+        grid-template-columns: 1fr;
+    }
+}
