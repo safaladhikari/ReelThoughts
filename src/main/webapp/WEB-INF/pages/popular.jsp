@@ -3,40 +3,105 @@
 <%@ page import="java.util.List" %>
 <%@ page import="java.util.ArrayList" %>
 <%@ page import="java.util.Arrays" %>
+<%@ page import="java.util.Map" %>
 
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Popular Movies | MovieHub</title>
+    <title>Popular Movies | ReelThoughts</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/recentreleases.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/search.css">
     <style>
-        .rating-container {
-            margin-top: 10px;
+        /* Movie Grid Layout */
+        .movie-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            padding: 20px;
         }
-        .movie-rating {
-            margin-bottom: 5px;
+
+        .movie-card {
+            background: #fff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            cursor: pointer;
         }
-        .reelthoughts-rating {
-            color: #004000;
-            font-weight: bold;
+
+        .movie-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .movie-poster {
+            position: relative;
+            width: 100%;
+            padding-top: 150%; /* 2:3 aspect ratio */
+            overflow: hidden;
+        }
+
+        .movie-poster img {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .movie-info {
+            padding: 15px;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .movie-info h3 {
+            margin: 0 0 10px 0;
+            font-size: 1.1em;
+            line-height: 1.3;
+        }
+
+        .meta {
+            color: #666;
+            font-size: 0.9em;
+            margin-bottom: 15px;
+        }
+
+        .favorite-count {
+            color: #ff4d4d;
+            font-size: 0.9em;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .favorite-count i {
+            color: #ff4d4d;
         }
     </style>
 </head>
 <body>
     <header>
         <nav class="navbar">
-            <div class="logo">ReelThoughts.</div>
+            <nav><a class="logo" href="${pageContext.request.contextPath}/home">ReelThoughts.</a></nav>
             <div class="search-bar">
-                <input type="text" placeholder="Search movies...">
+                <form action="${pageContext.request.contextPath}/search" method="GET" onsubmit="return validateSearch(this);">
+                    <input type="text" name="query" placeholder="Search movies..." value="${param.query}">
+                </form>
+                <div class="search-results"></div>
             </div>
             <div class="nav-links">
-                <a href="recentreleases.jsp">Recent Releases</a>
-                <a href="popular.jsp">Popular</a>
-                <a href="news.jsp">News</a>
-                <a href="userprofile.jsp"><i class="fa-regular fa-user"></i></a>
+                <a href="${pageContext.request.contextPath}/recentreleases">Recent Releases</a>
+                <a href="${pageContext.request.contextPath}/popular">Popular</a>
+                <a href="${pageContext.request.contextPath}/news">News</a>
+                <a href="${pageContext.request.contextPath}/profile"><i class="fa-regular fa-user"></i></a>
             </div>
         </nav>
     </header>
@@ -44,53 +109,113 @@
     <div class="recent-releases-container">
         <div class="page-header">
             <h1 class="page-title">Popular Movies</h1>
-            <p class="page-subtext">Check out the most talked about movies in the platform.</p>
+            <p class="page-subtext">Discover the most popular movies based on user favorites. These are the movies that our community loves the most.</p>
         </div>
         
         <div class="movie-grid">
             <%
-            class Movie {
-                String title;
-                String director;
-                String rating;
-                String reelthoughtsRating;
-                String imageUrl;
-
-                public Movie(String title, String director, String rating, String reelthoughtsRating, String imageUrl) {
-                    this.title = title;
-                    this.director = director;
-                    this.rating = rating;
-                    this.reelthoughtsRating = reelthoughtsRating;
-                    this.imageUrl = imageUrl;
-                }
-            }
-
-            List<Movie> popularMovies = Arrays.asList(
-                new Movie("Inception", "Christopher Nolan", "8.8", "9.1", "https://m.media-amazon.com/images/M/MV5BMjAxMzY3NjcxNF5BMl5BanBnXkFtZTcwNTI5OTM0Mw@@._V1_FMjpg_UX1000_.jpg"),
-                new Movie("The Shawshank Redemption", "Frank Darabont", "9.3", "9.5", "https://m.media-amazon.com/images/M/MV5BNDE3ODcxYzMtY2YzZC00NmNlLWJiNDMtZDViZWM2MzIxZDY2XkEyXkFqcGdeQXVyNjAwNDUxODI@._V1_.jpg"),
-                new Movie("The Dark Knight", "Christopher Nolan", "9.0", "9.3", "https://m.media-amazon.com/images/M/MV5BMTMxNTMwODM0NF5BMl5BanBnXkFtZTcwODAyMTk2Mw@@._V1_.jpg"),
-                new Movie("Pulp Fiction", "Quentin Tarantino", "8.9", "9.0", "https://m.media-amazon.com/images/M/MV5BNGNhMDIzZTUtNTBlZi00MTRlLWFjM2ItYzViMjE3YzI5MjljXkEyXkFqcGdeQXVyNzkwMjQ5NzM@._V1_.jpg"),
-                new Movie("Fight Club", "David Fincher", "8.8", "8.9", "https://m.media-amazon.com/images/M/MV5BNDIzNDU0YzEtYzE5Ni00ZjlkLTk5ZjgtNjM3NWE4YzA3Nzk3XkEyXkFqcGdeQXVyMjUzOTY1NTc@._V1_.jpg"),
-                new Movie("Forrest Gump", "Robert Zemeckis", "8.8", "8.7", "https://m.media-amazon.com/images/M/MV5BNWIwODRlZTUtY2U3ZS00Yzg1LWJhNzYtMmZiYmEyNmU1NjMzXkEyXkFqcGdeQXVyMTQxNzMzNDI@._V1_.jpg"),
-                new Movie("The Matrix", "Lana & Lilly Wachowski", "8.7", "8.8", "https://m.media-amazon.com/images/M/MV5BNzQzOTk3OTAtNDQ0Zi00ZTVkLWI0MTEtMDllZjNkYzNjNTc4L2ltYWdlXkEyXkFqcGdeQXVyNjU0OTQ0OTY@._V1_.jpg"),
-                new Movie("Parasite", "Bong Joon Ho", "8.5", "8.9", "https://m.media-amazon.com/images/M/MV5BYWZjMjk3ZTItODQ2ZC00NTY5LWE0ZDYtZTI3MjcwN2Q5NTVkXkEyXkFqcGdeQXVyODk4OTc3MTY@._V1_.jpg")
-            );
-
-            for (Movie movie : popularMovies) {
+            Object movies = request.getAttribute("movies");
+            if (movies != null && movies instanceof List) {
+                List<Map<String, Object>> movieList = (List<Map<String, Object>>) movies;
+                for (Map<String, Object> movie : movieList) {
+                    Object movieIdObj = movie.get("id");
+                    String movieId = (movieIdObj != null) ? movieIdObj.toString() : "null";
             %>
-                <div class="movie-card">
-                    <img src="<%= movie.imageUrl %>" alt="<%= movie.title %>" class="movie-poster">
-                    <div class="movie-info">
-                        <h3 class="movie-title"><%= movie.title %></h3>
-                        <p class="movie-director">Director: <%= movie.director %></p>
-                        <div class="rating-container">
-                            <p class="movie-rating">IMDb: ⭐ <%= movie.rating %></p>
-                            <p class="movie-rating">ReelThoughts: ⭐ <%= movie.reelthoughtsRating %></p>
-                        </div>
+                <div class="movie-card" onclick="window.location.href='${pageContext.request.contextPath}/movie-details?id=<%= movieId %>'">
+                    <div class="movie-poster">
+                        <img src="<%= movie.get("imageLink") %>" alt="<%= movie.get("title") %>">
                     </div>
+                    <div class="movie-info">
+                        <h3 class="movie-title"><%= movie.get("title") %></h3>
+                        <p class="meta">Director: <%= movie.get("director") %></p>
+                        <p class="meta"><%= movie.get("year") %> • <%= movie.get("genre") %></p>
+                        <p class="favorite-count">
+                            <i class="fas fa-heart"></i>
+                            <%= movie.get("favoriteCount") %> favorites
+                        </p>
+                    </div>
+                </div>
+            <% 
+                }
+            } else {
+            %>
+                <div class="no-movies">
+                    <p>No popular movies found.</p>
                 </div>
             <% } %>
         </div>
     </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            let searchTimeout;
+            const searchInput = document.querySelector('.search-bar input');
+            const searchResultsContainer = document.querySelector('.search-results');
+            const searchForm = document.querySelector('.search-bar form');
+
+            // Handle form submission
+            searchForm.addEventListener('submit', function(e) {
+                const query = searchInput.value.trim();
+                if (query.length < 2) {
+                    e.preventDefault();
+                    alert('Please enter at least 2 characters to search');
+                }
+            });
+
+            // Handle real-time search
+            searchInput.addEventListener('input', function() {
+                clearTimeout(searchTimeout);
+                const query = this.value.trim();
+                
+                if (query.length < 2) {
+                    searchResultsContainer.style.display = 'none';
+                    return;
+                }
+                
+                searchTimeout = setTimeout(() => {
+                    fetch('${pageContext.request.contextPath}/search?query=' + encodeURIComponent(query) + '&ajax=true')
+                        .then(response => response.json())
+                        .then(movies => {
+                            if (movies.length === 0) {
+                                searchResultsContainer.innerHTML = '<div class="no-results">No movies found</div>';
+                            } else {
+                                searchResultsContainer.innerHTML = movies.map(movie => `
+                                    <div class="search-result-item" onclick="window.location.href='${pageContext.request.contextPath}/movie-details?id=${movie.id}'">
+                                        <img src="${movie.imageLink}" alt="${movie.title}" class="search-result-poster">
+                                        <div class="search-result-info">
+                                            <h4>${movie.title}</h4>
+                                            <p>${movie.year} • ${movie.genre}</p>
+                                            <p>Director: ${movie.director}</p>
+                                        </div>
+                                    </div>
+                                `).join('');
+                            }
+                            searchResultsContainer.style.display = 'block';
+                        })
+                        .catch(error => {
+                            console.error('Error fetching search results:', error);
+                            searchResultsContainer.innerHTML = '<div class="error">Error loading results</div>';
+                            searchResultsContainer.style.display = 'block';
+                        });
+                }, 300);
+            });
+
+            // Close search results when clicking outside
+            document.addEventListener('click', function(event) {
+                if (!searchInput.contains(event.target) && !searchResultsContainer.contains(event.target)) {
+                    searchResultsContainer.style.display = 'none';
+                }
+            });
+        });
+
+        function validateSearch(form) {
+            const query = form.querySelector('input[name="query"]').value.trim();
+            if (query.length < 2) {
+                alert('Please enter at least 2 characters to search');
+                return false;
+            }
+            return true;
+        }
+    </script>
 </body>
 </html>

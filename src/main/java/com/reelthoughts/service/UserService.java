@@ -102,7 +102,7 @@ public class UserService {
 
     private UserModel extractUserFromResultSet(ResultSet rs) throws SQLException {
         UserModel user = new UserModel();
-        user.setUserId(rs.getInt("id"));
+        user.setUserId(rs.getInt("user_id"));
         user.setFirstName(rs.getString("first_name"));
         user.setLastName(rs.getString("last_name"));
         user.setEmail(rs.getString("email"));

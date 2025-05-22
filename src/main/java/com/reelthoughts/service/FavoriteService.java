@@ -28,14 +28,18 @@ public class FavoriteService {
             return false;
         }
 
-        String query = "INSERT INTO `user-favorite` (User_ID, Movie_ID) VALUES (?, ?)";
+        String query = "INSERT INTO user_favorite (User_ID, Movie_ID) VALUES (?, ?)";
+        System.out.println("[DEBUG] Adding favorite with User_ID: " + userId + ", Movie_ID: " + movieId);
 
         try (PreparedStatement stmt = dbConn.prepareStatement(query)) {
             stmt.setInt(1, userId);
             stmt.setInt(2, movieId);
-            return stmt.executeUpdate() > 0;
+            int result = stmt.executeUpdate();
+            System.out.println("[DEBUG] Insert result: " + result);
+            return result > 0;
         } catch (SQLException e) {
             System.err.println("Error adding favorite: " + e.getMessage());
+            e.printStackTrace();
             return false;
         }
     }
@@ -46,7 +50,7 @@ public class FavoriteService {
             return false;
         }
 
-        String query = "DELETE FROM `user-favorite` WHERE User_ID = ? AND Movie_ID = ?";
+        String query = "DELETE FROM user_favorite WHERE User_ID = ? AND Movie_ID = ?";
 
         try (PreparedStatement stmt = dbConn.prepareStatement(query)) {
             stmt.setInt(1, userId);
@@ -64,7 +68,7 @@ public class FavoriteService {
             return false;
         }
 
-        String query = "SELECT COUNT(*) as count FROM `user-favorite` WHERE User_ID = ? AND Movie_ID = ?";
+        String query = "SELECT COUNT(*) as count FROM user_favorite WHERE User_ID = ? AND Movie_ID = ?";
 
         try (PreparedStatement stmt = dbConn.prepareStatement(query)) {
             stmt.setInt(1, userId);
@@ -87,7 +91,7 @@ public class FavoriteService {
         }
 
         String query = "SELECT m.* FROM movies m " +
-                      "INNER JOIN `user-favorite` f ON m.id = f.Movie_ID " +
+                      "INNER JOIN user_favorite f ON m.id = f.Movie_ID " +
                       "WHERE f.User_ID = ?";
 
         try (PreparedStatement stmt = dbConn.prepareStatement(query)) {

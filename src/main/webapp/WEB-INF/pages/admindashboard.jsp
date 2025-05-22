@@ -20,7 +20,7 @@
         <!-- Sidebar -->
         <aside class="sidebar">
             <div class="sidebar-header">
-                <h2><i class="fas fa-film"></i> Movie Admin</h2>
+                <h2><i class="fas fa-film"></i> ReelThoughts.</h2>
             </div>
             <nav class="sidebar-nav">
                 <ul>
@@ -32,7 +32,7 @@
                 </ul>
             </nav>
             <div class="sidebar-footer">
-                <a href="#" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</a>
+                <a href="${pageContext.request.contextPath}/logout" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</a>
             </div>
         </aside>
 
@@ -116,7 +116,6 @@
                                 <th>First Name</th>
                                 <th>Last Name</th>
                                 <th>Email</th>
-                                <th>Role</th>
                                 <th>Joined</th>
                                 <th>Actions</th>
                             </tr>
@@ -124,20 +123,24 @@
                         <tbody>
                             <% 
                             Object users = request.getAttribute("users");
-                            if (users != null && users instanceof java.util.List) {
-                                java.util.List userList = (java.util.List) users;
-                                for (Object userObj : userList) {
-                                    java.util.Map<String, Object> user = (java.util.Map<String, Object>) userObj;
+                            System.out.println("[DEBUG] Users attribute in JSP: " + (users != null ? "not null" : "null"));
+                            if (users != null) {
+                                System.out.println("[DEBUG] Users attribute type: " + users.getClass().getName());
+                                if (users instanceof java.util.List) {
+                                    java.util.List userList = (java.util.List) users;
+                                    System.out.println("[DEBUG] Number of users in list: " + userList.size());
+                                    for (Object userObj : userList) {
+                                        java.util.Map<String, Object> user = (java.util.Map<String, Object>) userObj;
+                                        System.out.println("[DEBUG] Processing user: " + user.get("email") + " (ID: " + user.get("id") + ")");
                             %>
                                 <tr>
                                     <td><%= user.get("id") %></td>
                                     <td><%= user.get("firstName") %></td>
                                     <td><%= user.get("lastName") %></td>
                                     <td><%= user.get("email") %></td>
-                                    <td><%= user.get("role") %></td>
                                     <td><%= user.get("joinDate") %></td>
                                     <td>
-                                        <button class="btn btn-sm btn-edit" onclick="editUser(<%= user.get("id") %>)">
+                                        <button class="btn btn-sm btn-edit" onclick="editUser(<%= user.get("id") %>, '<%= user.get("firstName") %>', '<%= user.get("lastName") %>', '<%= user.get("email") %>')">
                                             <i class="fas fa-edit"></i>
                                         </button>
                                         <button class="btn btn-sm btn-delete" onclick="deleteUser(<%= user.get("id") %>)">
@@ -146,13 +149,53 @@
                                     </td>
                                 </tr>
                             <% 
-                                }
-                            } 
+                                    }
+                                } else {
+                                    System.out.println("[DEBUG] Users attribute is not a List instance");
                             %>
+                                    <tr>
+                                        <td colspan="6" class="text-center">Invalid users data format</td>
+                                    </tr>
+                            <%
+                                }
+                            } else {
+                                System.out.println("[DEBUG] No users found or invalid users attribute type");
+                            %>
+                                <tr>
+                                    <td colspan="6" class="text-center">No users found</td>
+                                </tr>
+                            <% } %>
                         </tbody>
                     </table>
                 </div>
             </section>
+
+            <!-- Edit User Modal -->
+            <div id="editUserModal" class="modal">
+                <div class="modal-content">
+                    <span class="close-btn" onclick="closeModal('editUserModal')">&times;</span>
+                    <h2>Edit User</h2>
+                    <form id="editUserForm" action="${pageContext.request.contextPath}/admin/dashboard" method="POST">
+                        <input type="hidden" id="editUserId" name="updateUserId">
+                        <div class="form-group">
+                            <label for="editFirstName">First Name</label>
+                            <input type="text" id="editFirstName" name="firstName" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="editLastName">Last Name</label>
+                            <input type="text" id="editLastName" name="lastName" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="editEmail">Email</label>
+                            <input type="email" id="editEmail" name="email" required>
+                        </div>
+                        <div class="form-actions">
+                            <button type="button" class="btn btn-secondary" onclick="closeModal('editUserModal')">Cancel</button>
+                            <button type="submit" class="btn btn-primary">Save Changes</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
 
             <!-- Movies Section -->
             <section id="movies" class="content-section">
@@ -203,7 +246,7 @@
                                     <td><%= movie.get("director") %></td>
                                     <td>
                                         <div class="action-buttons">
-                                            <button class="btn btn-sm btn-update" onclick="updateMovie(<%= movie.get("id") %>)">
+                                            <button class="btn btn-sm btn-update" onclick="updateMovie(<%= movie.get("id") %>, '<%= movie.get("title").toString().replace("'", "\\'") %>', '<%= movie.get("genre").toString().replace("'", "\\'") %>', <%= movie.get("year") %>, '<%= movie.get("director").toString().replace("'", "\\'") %>', '<%= movie.get("imageLink").toString().replace("'", "\\'") %>')">
                                                 <i class="fas fa-edit"></i> Update
                                             </button>
                                             <button class="btn btn-sm btn-delete" onclick="deleteMovie(<%= movie.get("id") %>)">
@@ -305,7 +348,7 @@
     <div class="modal-content">
         <span class="close-btn" onclick="closeModal('addUserModal')">&times;</span>
         <h2>Add New Admin User</h2>
-        <form id="addUserForm" action="admin/add-user" method="POST" enctype="multipart/form-data">
+        <form id="addUserForm" action="${pageContext.request.contextPath}/admin/add-user" method="POST" enctype="multipart/form-data">
             <!-- Required fields matching RegisterController -->
             <div class="form-row">
                 <div class="form-group">
@@ -414,6 +457,41 @@
         </div>
     </div>
 
+    <!-- Edit Movie Modal -->
+    <div id="updateMovieModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal('updateMovieModal')">&times;</span>
+            <h2>Update Movie</h2>
+            <form id="updateMovieForm" action="${pageContext.request.contextPath}/admin/dashboard" method="POST">
+                <input type="hidden" id="updateMovieId" name="updateMovieId">
+                <div class="form-group">
+                    <label for="updateTitle">Title</label>
+                    <input type="text" id="updateTitle" name="title" required>
+                </div>
+                <div class="form-group">
+                    <label for="updateGenre">Genre</label>
+                    <input type="text" id="updateGenre" name="genre" required>
+                </div>
+                <div class="form-group">
+                    <label for="updateYear">Release Year</label>
+                    <input type="number" id="updateYear" name="year" min="1900" max="2030" required>
+                </div>
+                <div class="form-group">
+                    <label for="updateDirector">Director</label>
+                    <input type="text" id="updateDirector" name="director" required>
+                </div>
+                <div class="form-group">
+                    <label for="updateImageLink">Movie Image URL</label>
+                    <input type="text" id="updateImageLink" name="imageLink" required placeholder="https://example.com/movie-image.jpg">
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('updateMovieModal')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script>
         // Modal functions
         function showAddUserModal() {
@@ -429,26 +507,60 @@
         }
 
         // User management functions
-        function editUser(userId) {
-            // Implement edit functionality
-            alert('Edit user with ID: ' + userId);
+        function editUser(id, firstName, lastName, email) {
+            document.getElementById('editUserId').value = id;
+            document.getElementById('editFirstName').value = firstName;
+            document.getElementById('editLastName').value = lastName;
+            document.getElementById('editEmail').value = email;
+            document.getElementById('editUserModal').style.display = 'block';
         }
 
-        function deleteUser(userId) {
-            if (confirm('Are you sure you want to delete this user?')) {
-                window.location.href = 'DeleteUserServlet?id=' + userId;
+        function deleteUser(id) {
+            if (confirm('Are you sure you want to delete this user? This will also delete all their favorites, watchlists, and reviews.')) {
+                fetch('${pageContext.request.contextPath}/admin/dashboard?deleteUserId=' + id, {
+                    method: 'DELETE'
+                })
+                .then(response => {
+                    if (response.ok) {
+                        window.location.reload();
+                    } else {
+                        alert('Error deleting user. Please try again.');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error deleting user. Please try again.');
+                });
             }
         }
 
         // Movie management functions
-        function updateMovie(movieId) {
-            // Implement update functionality
-            alert('Update movie with ID: ' + movieId);
+        function updateMovie(id, title, genre, year, director, imageLink) {
+            document.getElementById('updateMovieId').value = id;
+            document.getElementById('updateTitle').value = title;
+            document.getElementById('updateGenre').value = genre;
+            document.getElementById('updateYear').value = year;
+            document.getElementById('updateDirector').value = director;
+            document.getElementById('updateImageLink').value = imageLink;
+            document.getElementById('updateMovieModal').style.display = 'block';
         }
 
-        function deleteMovie(movieId) {
-            if (confirm('Are you sure you want to delete this movie?')) {
-                window.location.href = 'DeleteMovieServlet?id=' + movieId;
+        function deleteMovie(id) {
+            if (confirm('Are you sure you want to delete this movie? This will also delete all favorites, watchlists, and reviews associated with it.')) {
+                fetch('${pageContext.request.contextPath}/admin/dashboard?deleteMovieId=' + id, {
+                    method: 'DELETE'
+                })
+                .then(response => {
+                    if (response.ok) {
+                        window.location.reload();
+                    } else {
+                        alert('Error deleting movie. Please try again.');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error deleting movie. Please try again.');
+                });
             }
         }
 

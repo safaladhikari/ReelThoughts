@@ -1,5 +1,15 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
-
+<%@ page import="java.util.*" %>
+<%@ page import="java.text.SimpleDateFormat" %>
+<%@ page import="java.sql.Timestamp" %>
+<%
+    Map<String, Object> user = (Map<String, Object>) request.getAttribute("user");
+    String error = (String) request.getAttribute("error");
+    List<Map<String, Object>> favoriteMovies = (List<Map<String, Object>>) request.getAttribute("favoriteMovies");
+    List<Map<String, Object>> reviewedMovies = (List<Map<String, Object>>) request.getAttribute("reviewedMovies");
+    List<Map<String, Object>> watchlistMovies = (List<Map<String, Object>>) request.getAttribute("watchlistMovies");
+    SimpleDateFormat dateFormat = new SimpleDateFormat("MMM dd, yyyy");
+%>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -7,6 +17,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ReelThoughts Profile</title>
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/userprofile.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/search.css">
     <!-- Font Awesome for social icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
     <script src="https://kit.fontawesome.com/your-kit-code.js" crossorigin="anonymous"></script>
@@ -14,9 +25,11 @@
 <body>
     <header>
         <nav class="navbar">
-            <div class="logo">ReelThoughts.</div>
+            <nav><a class="logo" href="${pageContext.request.contextPath}/home">ReelThoughts.</a></nav>
             <div class="search-bar">
-                <input type="text" placeholder="Search movies...">
+                <form action="${pageContext.request.contextPath}/search" method="GET" onsubmit="return validateSearch(this);">
+                    <input type="text" name="query" placeholder="Search movies..." value="${param.query}">
+                </form>
             </div>
             <div class="nav-links">
                 <a href="${pageContext.request.contextPath}/recentreleases">Recent Releases</a>
@@ -35,106 +48,82 @@
                     <a href="${pageContext.request.contextPath}/favorites" class="view-more">View All →</a>
                 </h2>
                 <div class="films-container">
-                    <a href="goodfellas.html" class="film-card">
-                        <div class="film-poster">
-                            <img src="https://m.media-amazon.com/images/M/MV5BY2NkZjEzMDgtN2RjYy00YzM1LWI4ZmQtMjIwYjFjNmI3ZGEwXkEyXkFqcGdeQXVyNzkwMjQ5NzM@._V1_FMjpg_UX1000_.jpg" alt="Goodfellas">
+                    <% if (favoriteMovies != null && !favoriteMovies.isEmpty()) {
+                        for (Map<String, Object> movie : favoriteMovies) {
+                            Object movieIdObj = movie.get("id");
+                            String movieId = (movieIdObj != null) ? movieIdObj.toString() : "null";
+                    %>
+                        <a href="${pageContext.request.contextPath}/movie-details?id=<%= movieId %>" class="film-card">
+                            <div class="film-poster">
+                                <img src="<%= movie.get("imageLink") %>" alt="<%= movie.get("title") %>">
+                            </div>
+                            <div class="film-title"><%= movie.get("title") %></div>
+                            <div class="film-year"><%= movie.get("year") %></div>
+                        </a>
+                    <% 
+                        }
+                    } else {
+                    %>
+                        <div class="no-movies">
+                            <p>No favorite movies yet.</p>
                         </div>
-                        <div class="film-title">Goodfellas</div>
-                        <div class="film-year">1990</div>
-                    </a>
-                    <a href="inthemoodforlove.html" class="film-card">
-                        <div class="film-poster">
-                            <img src="${pageContext.request.contextPath}/resources/images/system/moodforlove.jpg"  alt="In the Mood for Love">
-                        </div>
-                        <div class="film-title">In the Mood for Love</div>
-                        <div class="film-year">2000</div>
-                    </a>
-                    <a href="woodjob.html" class="film-card">
-                        <div class="film-poster">
-                            <img src="https://m.media-amazon.com/images/M/MV5BMTY5NjI2MjQxMl5BMl5BanBnXkFtZTgwMDA2MzM2NzE@._V1_FMjpg_UX1000_.jpg" alt="Wood Job!">
-                        </div>
-                        <div class="film-title">Wood Job!</div>
-                        <div class="film-year">2014</div>
-                    </a>
-                    <a href="nocountryforoldmen.html" class="film-card">
-                        <div class="film-poster">
-                            <img src="https://m.media-amazon.com/images/M/MV5BMjA5NjkxMjg2Nl5BMl5BanBnXkFtZTcwMTkyMTc1Mw@@._V1_FMjpg_UX1000_.jpg" alt="No Country for Old Men">
-                        </div>
-                        <div class="film-title">No Country for Old Men</div>
-                        <div class="film-year">2007</div>
-                    </a>
+                    <% } %>
                 </div>
             </section>
             
             <section class="section">
                 <h2>Recent Reviews
-                    <a href="${pageContext.request.contextPath}/reviews" class="view-more">View All →</a>
+                    <a href="${pageContext.request.contextPath}/userprofilereview" class="view-more">View All →</a>
                 </h2>
                 <div class="films-container">
-                    <a href="shawshank.html" class="film-card">
-                        <div class="film-poster">
-                            <img src="https://m.media-amazon.com/images/M/MV5BMDFkYTc0MGEtZmNhMC00ZDIzLWFmNTEtODM1ZmRlYWMwMWFmXkEyXkFqcGdeQXVyMTMxODk2OTU@._V1_FMjpg_UX1000_.jpg" alt="The Shawshank Redemption">
+                    <% if (reviewedMovies != null && !reviewedMovies.isEmpty()) {
+                        for (Map<String, Object> movie : reviewedMovies) {
+                            Object movieIdObj = movie.get("id");
+                            String movieId = (movieIdObj != null) ? movieIdObj.toString() : "null";
+                    %>
+                        <a href="${pageContext.request.contextPath}/movie-details?id=<%= movieId %>" class="film-card">
+                            <div class="film-poster">
+                                <img src="<%= movie.get("imageLink") %>" alt="<%= movie.get("title") %>">
+                            </div>
+                            <div class="film-title"><%= movie.get("title") %></div>
+                            <div class="film-year"><%= movie.get("year") %></div>
+                        </a>
+                    <% 
+                        }
+                    } else {
+                    %>
+                        <div class="no-movies">
+                            <p>No reviews yet.</p>
                         </div>
-                        <div class="film-title">The Shawshank Redemption</div>
-                        <div class="film-year">1994</div>
-                    </a>
-                    <a href="godfather.html" class="film-card">
-                        <div class="film-poster">
-                            <img src="https://m.media-amazon.com/images/M/MV5BM2MyNjYxNmUtYTAwNi00MTYxLWJmNWYtYzZlODY3ZTk3OTFlXkEyXkFqcGdeQXVyNzkwMjQ5NzM@._V1_FMjpg_UX1000_.jpg" alt="The Godfather">
-                        </div>
-                        <div class="film-title">The Godfather</div>
-                        <div class="film-year">1972</div>
-                    </a>
-                    <a href="pulpfiction.html" class="film-card">
-                        <div class="film-poster">
-                            <img src="https://m.media-amazon.com/images/M/MV5BMWMwMGQzZTItY2JlNC00OWZiLWIyMDctNDk2ZDQ2YjRjMWQ0XkEyXkFqcGdeQXVyNzkwMjQ5NzM@._V1_FMjpg_UX1000_.jpg" alt="Pulp Fiction">
-                        </div>
-                        <div class="film-title">Pulp Fiction</div>
-                        <div class="film-year">1994</div>
-                    </a>
-                    <a href="schindlerslist.html" class="film-card">
-                        <div class="film-poster">
-                            <img src="https://m.media-amazon.com/images/M/MV5BMTUxMzQyNjA5MF5BMl5BanBnXkFtZTYwOTU2NTY3._V1_FMjpg_UX1000_.jpg" alt="Schindler's List">
-                        </div>
-                        <div class="film-title">Schindler's List</div>
-                        <div class="film-year">1993</div>
-                    </a>
+                    <% } %>
                 </div>
             </section>
             
             <section class="section">
                 <h2>Watch List
-                    <a href="${pageContext.request.contextPath}/watchlist" class="view-more">View All →</a>
+                    <a href="${pageContext.request.contextPath}/watchlist" class="view-more"></a>
                 </h2>
                 <div class="films-container">
-                    <a href="shawshank.html" class="film-card">
-                        <div class="film-poster">
-                            <img src="https://m.media-amazon.com/images/M/MV5BMDFkYTc0MGEtZmNhMC00ZDIzLWFmNTEtODM1ZmRlYWMwMWFmXkEyXkFqcGdeQXVyMTMxODk2OTU@._V1_FMjpg_UX1000_.jpg" alt="The Shawshank Redemption">
+                    <% if (watchlistMovies != null && !watchlistMovies.isEmpty()) {
+                        for (Map<String, Object> movie : watchlistMovies) {
+                            Object movieIdObj = movie.get("id");
+                            String movieId = (movieIdObj != null) ? movieIdObj.toString() : "null";
+                    %>
+                        <a href="${pageContext.request.contextPath}/movie-details?id=<%= movieId %>" class="film-card">
+                            <div class="film-poster">
+                                <img src="<%= movie.get("imageLink") %>" alt="<%= movie.get("title") %>">
+                            </div>
+                            <div class="film-title"><%= movie.get("title") %></div>
+                            <div class="film-year"><%= movie.get("year") %></div>
+                        </a>
+                    <% 
+                        }
+                    } else {
+                    %>
+                        <div class="no-movies">
+                            <p>No movies in watchlist yet.</p>
                         </div>
-                        <div class="film-title">The Shawshank Redemption</div>
-                        <div class="film-year">1994</div>
-                    </a>
-                    <a href="godfather.html" class="film-card">
-                        <div class="film-poster">
-                            <img src="https://m.media-amazon.com/images/M/MV5BM2MyNjYxNmUtYTAwNi00MTYxLWJmNWYtYzZlODY3ZTk3OTFlXkEyXkFqcGdeQXVyNzkwMjQ5NzM@._V1_FMjpg_UX1000_.jpg" alt="The Godfather">
-                        </div>
-                        <div class="film-title">The Godfather</div>
-                        <div class="film-year">1972</div>
-                    </a>
-                    <a href="pulpfiction.html" class="film-card">
-                        <div class="film-poster">
-                            <img src="https://m.media-amazon.com/images/M/MV5BMWMwMGQzZTItY2JlNC00OWZiLWIyMDctNDk2ZDQ2YjRjMWQ0XkEyXkFqcGdeQXVyNzkwMjQ5NzM@._V1_FMjpg_UX1000_.jpg" alt="Pulp Fiction">
-                        </div>
-                        <div class="film-title">Pulp Fiction</div>
-                        <div class="film-year">1994</div>
-                    </a>
-                    <a href="schindlerslist.html" class="film-card">
-                        <div class="film-poster">
-                            <img src="https://m.media-amazon.com/images/M/MV5BMTUxMzQyNjA5MF5BMl5BanBnXkFtZTYwOTU2NTY3._V1_FMjpg_UX1000_.jpg" alt="Schindler's List">
-                        </div>
-                        <div class="film-title">Schindler's List</div>
-                        <div class="film-year">1993</div>
-                    </a>
+                    <% } %>
                 </div>
             </section>
         </main>
@@ -143,17 +132,25 @@
         <aside class="sidebar">
             <div class="profile-header">
                 <div class="profile-pic">
-                    <img src="${pageContext.request.contextPath}/resources/images/system/akira.jpg" alt="Profile" style="width:100%; height:100%; object-fit:cover;">
+                    <% 
+                        String profilePicPath = (user != null && user.get("profilePicture") != null) ? (String)user.get("profilePicture") : "";
+                        System.out.println("[DEBUG JSP] Profile Picture Path from user object: " + profilePicPath);
+
+                        if (user != null && !profilePicPath.isEmpty()) {
+                    %>
+                        <img src="${pageContext.request.contextPath}<%= profilePicPath %>" alt="Profile" style="width:100%; height:100%; object-fit:cover;">
+                    <% } else {
+                    %>
+                        <i class="fas fa-user-circle" style="font-size: 150px; color: #666;"></i>
+                    <% } %>
                 </div>
-                <div class="profile-name">Safal Adhikari</div>
-                
+                <div class="profile-name" style="color: white !important;"><%= user != null ? user.get("firstName") + " " + user.get("lastName") : "" %></div>
             </div>
             <ul>
                 <li><a href="${pageContext.request.contextPath}/edit-profile">Edit Profile</a></li>
-                <li><a href="${pageContext.request.contextPath}/favorites">Favorites</a></li>
-                <li><a href="${pageContext.request.contextPath}/ratings">Ratings</a></li>
-                <li><a href="${pageContext.request.contextPath}/reviews">Reviews</a></li>
-                <li><a href="${pageContext.request.contextPath}/watchlist">Watchlist</a></li>
+                <li><a href="${pageContext.request.contextPath}/userprofilereview">Reviews</a></li>
+                <li><a href="${pageContext.request.contextPath}//favorites">Favorites</a></li>
+                <li><a href="${pageContext.request.contextPath}/userprofilerating">Ratings</a></li>
                 <li><a href="${pageContext.request.contextPath}/logout">Logout</a></li>
             </ul>
         </aside>
@@ -185,5 +182,16 @@
             <p>&copy; 2025 ReelThoughts. All rights reserved.</p>
         </div>
     </footer>
+
+    <script>
+        function validateSearch(form) {
+            const query = form.querySelector('input[name="query"]').value.trim();
+            if (query.length < 2) {
+                alert('Please enter at least 2 characters to search');
+                return false;
+            }
+            return true;
+        }
+    </script>
 </body>
 </html>

@@ -35,7 +35,7 @@
             <div class="registration-card">
                 <div class="form-header">
                     <h2>Edit Profile</h2>
-                    <p class="login-prompt"><a href="userprofile.jsp">← Back to Profile</a></p>
+                   <p><a href="${pageContext.request.contextPath}/profile"><i class="fa-regular fa-user"></i>← Back to Profile</a></p>
                 </div>
 
                 <c:if test="${not empty error}">

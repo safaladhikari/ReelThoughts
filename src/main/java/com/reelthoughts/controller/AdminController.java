@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.reelthoughts.util.SessionUtil;
+import com.reelthoughts.config.DbConfig;
 
 @WebServlet("/admin/dashboard")
 public class AdminController extends HttpServlet {
@@ -43,18 +44,12 @@ public class AdminController extends HttpServlet {
         }
         
         try {
-            // Load the MySQL JDBC driver
-            Class.forName("com.mysql.cj.jdbc.Driver");
-            System.out.println("[DEBUG] MySQL JDBC Driver loaded successfully");
+            // Get database connection using DbConfig
+            System.out.println("[DEBUG] Getting database connection from DbConfig");
+            Connection conn = DbConfig.getDbConnection();
+            System.out.println("[DEBUG] Database connection established successfully");
             
-            // Database connection parameters
-            String url = "jdbc:mysql://localhost:3306/reelthoughts";
-            String username = "root";
-            String password = "";
-            
-            try (Connection conn = DriverManager.getConnection(url, username, password)) {
-                System.out.println("[DEBUG] Database connection established");
-                
+            try {
                 // Get total users count
                 try (Statement stmt = conn.createStatement();
                      ResultSet rs = stmt.executeQuery("SELECT COUNT(*) as count FROM users")) {
@@ -75,7 +70,7 @@ public class AdminController extends HttpServlet {
                 
                 // Get total favorites count
                 try (Statement stmt = conn.createStatement();
-                     ResultSet rs = stmt.executeQuery("SELECT COUNT(*) as count FROM `user-favorite`")) {
+                     ResultSet rs = stmt.executeQuery("SELECT COUNT(*) as count FROM user_favorite")) {
                     if (rs.next()) {
                         request.setAttribute("totalFavorites", rs.getInt("count"));
                     }
@@ -83,7 +78,7 @@ public class AdminController extends HttpServlet {
                 
                 // Get total watchlists count
                 try (Statement stmt = conn.createStatement();
-                     ResultSet rs = stmt.executeQuery("SELECT COUNT(*) as count FROM watchlists")) {
+                     ResultSet rs = stmt.executeQuery("SELECT COUNT(*) as count FROM user_watchlist")) {
                     if (rs.next()) {
                         request.setAttribute("totalWatchlists", rs.getInt("count"));
                     }
@@ -91,19 +86,33 @@ public class AdminController extends HttpServlet {
                 
                 // Get all users
                 List<Map<String, Object>> users = new ArrayList<>();
-                try (Statement stmt = conn.createStatement();
-                     ResultSet rs = stmt.executeQuery("SELECT id, first_name, last_name, email, role, created_at as joinDate FROM users")) {
-                    while (rs.next()) {
-                        Map<String, Object> user = new HashMap<>();
-                        user.put("id", rs.getInt("id"));
-                        user.put("firstName", rs.getString("first_name"));
-                        user.put("lastName", rs.getString("last_name"));
-                        user.put("email", rs.getString("email"));
-                        user.put("role", rs.getString("role"));
-                        user.put("joinDate", rs.getDate("joinDate"));
-                        users.add(user);
+                try (Statement stmt = conn.createStatement()) {
+                    String userQuery = "SELECT user_id, first_name, last_name, email, created_at FROM users ORDER BY user_id DESC";
+                    System.out.println("[DEBUG] Executing users query: " + userQuery);
+                    try (ResultSet rs = stmt.executeQuery(userQuery)) {
+                        System.out.println("[DEBUG] Query executed successfully");
+                        int userCount = 0;
+                        while (rs.next()) {
+                            Map<String, Object> user = new HashMap<>();
+                            user.put("id", rs.getInt("user_id"));
+                            user.put("firstName", rs.getString("first_name"));
+                            user.put("lastName", rs.getString("last_name"));
+                            user.put("email", rs.getString("email"));
+                            user.put("joinDate", rs.getTimestamp("created_at"));
+                            users.add(user);
+                            userCount++;
+                            System.out.println("[DEBUG] Found user: " + user.get("email") + " (ID: " + user.get("id") + ")");
+                        }
+                        System.out.println("[DEBUG] Total users fetched: " + userCount);
+                    } catch (SQLException e) {
+                        System.err.println("[ERROR] Error executing users query: " + e.getMessage());
+                        e.printStackTrace();
                     }
+                } catch (SQLException e) {
+                    System.err.println("[ERROR] Error creating statement: " + e.getMessage());
+                    e.printStackTrace();
                 }
+                System.out.println("[DEBUG] Setting users attribute with " + users.size() + " users");
                 request.setAttribute("users", users);
                 
                 // Get all movies
@@ -137,7 +146,7 @@ public class AdminController extends HttpServlet {
                      ResultSet rs = stmt.executeQuery(
                          "SELECT m.title, COUNT(f.Movie_ID) as favoriteCount " +
                          "FROM movies m " +
-                         "LEFT JOIN `user-favorite` f ON m.id = f.Movie_ID " +
+                         "LEFT JOIN user_favorite f ON m.id = f.Movie_ID " +
                          "GROUP BY m.id, m.title " +
                          "ORDER BY favoriteCount DESC " +
                          "LIMIT 5")) {
@@ -154,9 +163,9 @@ public class AdminController extends HttpServlet {
                 List<Map<String, Object>> topWatchlistedMovies = new ArrayList<>();
                 try (Statement stmt = conn.createStatement();
                      ResultSet rs = stmt.executeQuery(
-                         "SELECT m.title, COUNT(w.id) as watchlistCount " +
+                         "SELECT m.title, COUNT(w.Movie_ID) as watchlistCount " +
                          "FROM movies m " +
-                         "LEFT JOIN watchlists w ON m.id = w.movie_id " +
+                         "LEFT JOIN user_watchlist w ON m.id = w.Movie_ID " +
                          "GROUP BY m.id, m.title " +
                          "ORDER BY watchlistCount DESC " +
                          "LIMIT 5")) {
@@ -168,15 +177,176 @@ public class AdminController extends HttpServlet {
                     }
                 }
                 request.setAttribute("topWatchlistedMovies", topWatchlistedMovies);
+            } finally {
+                // Close the connection
+                if (conn != null) {
+                    try {
+                        conn.close();
+                        System.out.println("[DEBUG] Database connection closed");
+                    } catch (SQLException e) {
+                        System.err.println("[ERROR] Error closing connection: " + e.getMessage());
+                    }
+                }
             }
-        } catch (ClassNotFoundException | SQLException e) {
-            System.err.println("[ERROR] Exception in AdminController: " + e.getMessage());
+        } catch (SQLException | ClassNotFoundException e) {
+            System.err.println("[ERROR] Database error: " + e.getMessage());
             e.printStackTrace();
-            request.setAttribute("error", "Error loading dashboard data: " + e.getMessage());
+            request.setAttribute("error", "Database error: " + e.getMessage());
+        } catch (Exception e) {
+            System.err.println("[ERROR] Unexpected error: " + e.getMessage());
+            e.printStackTrace();
+            request.setAttribute("error", "Unexpected error: " + e.getMessage());
         }
         
         System.out.println("[DEBUG] Forwarding to admin dashboard JSP");
         // Forward to admin dashboard
         request.getRequestDispatcher("/WEB-INF/pages/admindashboard.jsp").forward(request, response);
+    }
+
+    @Override
+    protected void doPost(HttpServletRequest request, HttpServletResponse response) 
+            throws ServletException, IOException {
+        
+        // Check if the user is logged in and is an admin
+        String userRole = (String) SessionUtil.getAttribute(request, "userRole");
+        if (userRole == null || !"admin".equals(userRole)) {
+            response.sendRedirect(request.getContextPath() + "/login");
+            return;
+        }
+
+        try {
+            Connection conn = DbConfig.getDbConnection();
+            try {
+                // Handle user update
+                String updateUserId = request.getParameter("updateUserId");
+                if (updateUserId != null) {
+                    String firstName = request.getParameter("firstName");
+                    String lastName = request.getParameter("lastName");
+                    String email = request.getParameter("email");
+
+                    String sql = "UPDATE users SET first_name = ?, last_name = ?, email = ? WHERE user_id = ?";
+                    try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+                        pstmt.setString(1, firstName);
+                        pstmt.setString(2, lastName);
+                        pstmt.setString(3, email);
+                        pstmt.setInt(4, Integer.parseInt(updateUserId));
+                        pstmt.executeUpdate();
+                    }
+                }
+
+                // Handle movie update
+                String updateMovieId = request.getParameter("updateMovieId");
+                if (updateMovieId != null) {
+                    String title = request.getParameter("title");
+                    String genre = request.getParameter("genre");
+                    int year = Integer.parseInt(request.getParameter("year"));
+                    String director = request.getParameter("director");
+                    String imageLink = request.getParameter("imageLink");
+
+                    String sql = "UPDATE movies SET title = ?, genre = ?, year = ?, director = ?, imageLink = ? WHERE id = ?";
+                    try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+                        pstmt.setString(1, title);
+                        pstmt.setString(2, genre);
+                        pstmt.setInt(3, year);
+                        pstmt.setString(4, director);
+                        pstmt.setString(5, imageLink);
+                        pstmt.setInt(6, Integer.parseInt(updateMovieId));
+                        pstmt.executeUpdate();
+                    }
+                }
+            } finally {
+                if (conn != null) conn.close();
+            }
+        } catch (Exception e) {
+            System.err.println("[ERROR] Error in doPost: " + e.getMessage());
+            e.printStackTrace();
+            request.setAttribute("error", "Error processing request: " + e.getMessage());
+        }
+
+        // Redirect back to dashboard
+        response.sendRedirect(request.getContextPath() + "/admin/dashboard");
+    }
+
+    @Override
+    protected void doDelete(HttpServletRequest request, HttpServletResponse response) 
+            throws ServletException, IOException {
+        
+        // Check if the user is logged in and is an admin
+        String userRole = (String) SessionUtil.getAttribute(request, "userRole");
+        if (userRole == null || !"admin".equals(userRole)) {
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.getWriter().write("Unauthorized");
+            return;
+        }
+
+        try {
+            Connection conn = DbConfig.getDbConnection();
+            try {
+                // Handle user deletion
+                String deleteUserId = request.getParameter("deleteUserId");
+                if (deleteUserId != null) {
+                    // First delete related records
+                    String deleteFavorites = "DELETE FROM user_favorite WHERE User_ID = ?";
+                    String deleteWatchlists = "DELETE FROM user_watchlist WHERE User_ID = ?";
+                    String deleteReviews = "DELETE FROM reviews WHERE User_ID = ?";
+                    String deleteUser = "DELETE FROM users WHERE user_id = ?";
+
+                    try (PreparedStatement pstmt = conn.prepareStatement(deleteFavorites)) {
+                        pstmt.setInt(1, Integer.parseInt(deleteUserId));
+                        pstmt.executeUpdate();
+                    }
+                    try (PreparedStatement pstmt = conn.prepareStatement(deleteWatchlists)) {
+                        pstmt.setInt(1, Integer.parseInt(deleteUserId));
+                        pstmt.executeUpdate();
+                    }
+                    try (PreparedStatement pstmt = conn.prepareStatement(deleteReviews)) {
+                        pstmt.setInt(1, Integer.parseInt(deleteUserId));
+                        pstmt.executeUpdate();
+                    }
+                    try (PreparedStatement pstmt = conn.prepareStatement(deleteUser)) {
+                        pstmt.setInt(1, Integer.parseInt(deleteUserId));
+                        pstmt.executeUpdate();
+                    }
+                }
+
+                // Handle movie deletion
+                String deleteMovieId = request.getParameter("deleteMovieId");
+                if (deleteMovieId != null) {
+                    // First delete related records
+                    String deleteFavorites = "DELETE FROM user_favorite WHERE Movie_ID = ?";
+                    String deleteWatchlists = "DELETE FROM user_watchlist WHERE Movie_ID = ?";
+                    String deleteReviews = "DELETE FROM reviews WHERE Movie_ID = ?";
+                    String deleteMovie = "DELETE FROM movies WHERE id = ?";
+
+                    try (PreparedStatement pstmt = conn.prepareStatement(deleteFavorites)) {
+                        pstmt.setInt(1, Integer.parseInt(deleteMovieId));
+                        pstmt.executeUpdate();
+                    }
+                    try (PreparedStatement pstmt = conn.prepareStatement(deleteWatchlists)) {
+                        pstmt.setInt(1, Integer.parseInt(deleteMovieId));
+                        pstmt.executeUpdate();
+                    }
+                    try (PreparedStatement pstmt = conn.prepareStatement(deleteReviews)) {
+                        pstmt.setInt(1, Integer.parseInt(deleteMovieId));
+                        pstmt.executeUpdate();
+                    }
+                    try (PreparedStatement pstmt = conn.prepareStatement(deleteMovie)) {
+                        pstmt.setInt(1, Integer.parseInt(deleteMovieId));
+                        pstmt.executeUpdate();
+                    }
+                }
+            } finally {
+                if (conn != null) conn.close();
+            }
+        } catch (Exception e) {
+            System.err.println("[ERROR] Error in doDelete: " + e.getMessage());
+            e.printStackTrace();
+            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            response.getWriter().write("Error processing request: " + e.getMessage());
+            return;
+        }
+
+        response.setStatus(HttpServletResponse.SC_OK);
+        response.getWriter().write("Success");
     }
 }

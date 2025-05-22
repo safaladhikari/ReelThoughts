@@ -1,5 +1,6 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8"
     pageEncoding="UTF-8"%>
+<%@ page import="java.util.*" %>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -7,9 +8,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ReelThoughts - Home</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/header.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/recentreleases.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/search.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/home.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/favorite.css">
+    
     <style>
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 1.5rem;
+        }
         .rating-container {
             margin-top: 10px;
         }
@@ -20,20 +30,381 @@
             color: #000000;
             font-weight: bold;
         }
+        
+        /* Simple Popup Styles */
+        .popup-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .popup {
+            background-color: white;
+            padding: 20px;
+            border-radius: 5px;
+            max-width: 400px;
+            width: 90%;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.3);
+        }
+        
+        .popup-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .popup-title {
+            margin: 0;
+            font-size: 18px;
+        }
+        
+        .popup-close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+        }
+        
+        .popup-content {
+            margin-bottom: 20px;
+        }
+        
+        .popup-buttons {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+        
+        .popup-button {
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        .popup-button.cancel {
+            background-color: #f5f5f5;
+            border: 1px solid #ddd;
+        }
+        
+        .popup-button.confirm {
+            background-color: #007bff;
+            border: none;
+            color: white;
+        }
+        
+        /* Rating Popup Styles */
+        .rating-stars {
+            display: flex;
+            justify-content: center;
+            gap: 5px;
+            margin: 20px 0;
+        }
+        
+        .rating-star {
+            font-size: 24px;
+            color: #ddd;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+        
+        .rating-star:hover,
+        .rating-star.active {
+            color: #ffd700;
+        }
+        
+        .rating-value {
+            text-align: center;
+            font-size: 18px;
+            margin-top: 10px;
+            color: #333;
+        }
+
+        /* Add styles for rated button */
+        .rate-btn.rated {
+            background-color: #ffd700;
+            color: #000;
+        }
+        
+        .rate-btn.rated i {
+            color: #000;
+        }
+
+        /* Update movie grid layout */
+        .movie-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            padding: 20px;
+        }
+
+        .movie-card {
+            background: #fff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .movie-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .movie-poster {
+            position: relative;
+            width: 100%;
+            padding-top: 150%; /* 2:3 aspect ratio */
+            overflow: hidden;
+        }
+
+        .movie-poster img {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .movie-info {
+            padding: 15px;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .movie-info h3 {
+            margin: 0 0 10px 0;
+            font-size: 1.1em;
+            line-height: 1.3;
+        }
+
+        .meta {
+            color: #666;
+            font-size: 0.9em;
+            margin-bottom: 15px;
+        }
+
+        .actions {
+            margin-top: auto;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .actions button {
+            flex: 1;
+            min-width: 80px;
+            padding: 8px;
+            border: none;
+            border-radius: 4px;
+            background: #f0f0f0;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9em;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+        }
+
+        .actions button:hover {
+            background: #e0e0e0;
+            transform: translateY(-2px);
+        }
+
+        /* Favorite button styles */
+        .favorite-btn {
+            color: #000;
+        }
+
+        .favorite-btn.active {
+            background: #fff;
+            color: #000;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .favorite-btn.active i {
+            color: #ff4d4d;
+        }
+
+        /* Watchlist button styles */
+        .watchlist-btn {
+            color: #000;
+        }
+
+        .watchlist-btn.active {
+            background: #fff;
+            color: #000;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .watchlist-btn.active i {
+            color: #000;
+        }
+
+        /* Rate button styles */
+        .rate-btn {
+            color: #000;
+        }
+
+        .rate-btn.rated {
+            background: #fff;
+            color: #000;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .rate-btn.rated i {
+            color: #ffd700;
+        }
+
+        /* Add hover effects for active states */
+        .favorite-btn.active:hover {
+            background: #f8f8f8;
+        }
+
+        .watchlist-btn.active:hover {
+            background: #f8f8f8;
+        }
+
+        .rate-btn.rated:hover {
+            background: #f8f8f8;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 1200px) {
+            .movie-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        @media (max-width: 900px) {
+            .movie-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 600px) {
+            .movie-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .movie-slider {
+            /* margin-top: 30px;  Remove space between navbar and slider */
+        }
+        
+        .slider-container {
+            position: relative;
+            width: 100%;
+            overflow: hidden;
+        }
+        
+        .slider-wrapper {
+            display: flex;
+            width: 100%;
+            overflow: hidden;
+        }
+        
+        .slide {
+            flex: 0 0 100%;
+            width: 100%;
+            position: relative;
+        }
+        
+        .slide img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .slide-info {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 10px;
+            background-color: rgba(0, 0, 0, 0.5);
+            color: white;
+        }
+        
+        .slide-info h3 {
+            margin: 0;
+            font-size: 1.5em;
+            line-height: 1.2;
+        }
+        
+        .movie-meta {
+            font-size: 0.9em;
+            margin-top: 5px;
+        }
+        
+        .watch-now {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        
+        .slider-dots {
+            position: absolute;
+            bottom: 10px;
+            left: 0;
+            right: 0;
+            display: flex;
+            justify-content: center;
+        }
+        
+        .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: #ccc;
+            margin: 0 5px;
+        }
+        
+        .dot.active {
+            background-color: #007bff;
+        }
+
+        /* Remove navbar underline hover effect */
+        .nav-links a::after {
+            display: none !important;
+        }
+        /* Remove underline from the logo link */
+        .logo {
+            text-decoration: none;
+        }
     </style>
 </head>
 <body>
     <header>
         <nav class="navbar">
-            <div class="logo">ReelThoughts.</div>
+            <nav><a class="logo" href="${pageContext.request.contextPath}/home">ReelThoughts.</a></nav>
             <div class="search-bar">
-                <input type="text" placeholder="Search movies...">
+                <form action="${pageContext.request.contextPath}/search" method="GET" onsubmit="return validateSearch(this);">
+                    <input type="text" name="query" placeholder="Search movies..." value="${param.query}">
+                </form>
+                <div class="search-results"></div>
             </div>
              <div class="nav-links">
-                <a href="<%= request.getContextPath() %>/recentreleases">Recent Releases</a>
-                <a href="<%= request.getContextPath() %>/popular">Popular</a>
-                <a href="<%= request.getContextPath() %>/news">News</a>
-                <a href="<%= request.getContextPath() %>/profile"><i class="fa-regular fa-user"></i></a>
+                <a href="${pageContext.request.contextPath}/recentreleases">Recent Releases</a>
+                <a href="${pageContext.request.contextPath}/popular">Popular</a>
+                <a href="${pageContext.request.contextPath}/news">News</a>
+                <a href="${pageContext.request.contextPath}/profile"><i class="fa-regular fa-user"></i></a>
             </div>
         </nav>
     </header>
@@ -85,172 +456,142 @@
                 <a href="#" class="see-all">See All</a>
             </div>
             <div class="movie-grid">
-                <!-- Movie Card 1 -->
-                <div class="movie-card">
+                <% 
+                    List<Map<String, Object>> movies = (List<Map<String, Object>>) request.getAttribute("movies");
+                    if (movies != null && !movies.isEmpty()) {
+                        for (Map<String, Object> movie : movies) {
+                            Object movieIdObj = movie.get("id");
+                            String movieId = (movieIdObj != null) ? movieIdObj.toString() : "null";
+                %>
+                <div class="movie-card" onclick="window.location.href='${pageContext.request.contextPath}/movie-details?id=<%= movieId %>'">
                     <div class="movie-poster">
-                        <img src="${pageContext.request.contextPath}/resources/images/system/dune.jpg" alt="Dune">
-                        <button class="favorite-btn" data-movie-id="1">
-                            <i class="far fa-heart"></i> Favorite
-                        </button>
+                        <img src="<%= movie.get("imageLink") %>" alt="<%= movie.get("title") %>">
                         <div class="rating-badge">8.7</div>
                     </div>
                     <div class="movie-info">
-                        <h3>Dune: Part Two</h3>
-                        <p class="meta">2024 • Sci-Fi • 2h 46m</p>
-                        <div class="actions">
-                            <button class="watchlist-btn"><i class="far fa-bookmark"></i> Watchlist</button>
-                            <button class="favorite-btn" data-movie-id="1">
+                        <h3 class="movie-title"><%= movie.get("title") %></h3>
+                        <p class="meta">Director: <%= movie.get("director") %></p>
+                        <p class="meta"><%= movie.get("year") %> • <%= movie.get("genre") %></p>
+                        <div class="actions" onclick="event.stopPropagation();">
+                            <button class="watchlist-btn" data-movie-id="<%= movieId %>" onclick="handleButtonClick(this, 'watchlist')">
+                                <i class="far fa-bookmark"></i> Watchlist
+                            </button>
+                            <button class="favorite-btn" data-movie-id="<%= movieId %>" onclick="handleButtonClick(this, 'favorite')">
                                 <i class="far fa-heart"></i> Favorite
                             </button>
-                            <button class="rate-btn"><i class="far fa-star"></i> Rate</button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Movie Card 2 -->
-                <div class="movie-card">
-                    <div class="movie-poster">
-                        <img src="${pageContext.request.contextPath}/resources/images/system/openheimer.jpg" alt="Openheimer">
-                        <button class="favorite-btn" data-movie-id="2">
-                            <i class="far fa-heart"></i> Favorite
-                        </button>
-                        <div class="rating-badge">7.9</div>
-                    </div>
-                    <div class="movie-info">
-                        <h3>Oppenheimer</h3>
-                        <p class="meta">2023 • Biography • 3h</p>
-                        <div class="actions">
-                            <button class="watchlist-btn"><i class="far fa-bookmark"></i> Watchlist</button>
-                            <button class="favorite-btn" data-movie-id="2">
-                                <i class="far fa-heart"></i> Favorite
+                            <button class="rate-btn" data-movie-id="<%= movieId %>" onclick="handleButtonClick(this, 'rate')">
+                                <i class="far fa-star"></i> Rate
                             </button>
-                            <button class="rate-btn"><i class="far fa-star"></i> Rate</button>
                         </div>
                     </div>
                 </div>
-
-                <!-- Movie Card 3 -->
-                <div class="movie-card">
-                    <div class="movie-poster">
-                        <img src="${pageContext.request.contextPath}/resources/images/system/the godfather.jpg" alt="The Godfather">
-                        <button class="favorite-btn" data-movie-id="3">
-                            <i class="far fa-heart"></i> Favorite
-                        </button>
-                        <div class="rating-badge">9.1</div>
-                    </div>
-                    <div class="movie-info">
-                        <h3>The Godfather</h3>
-                        <p class="meta">1972 • Crime • 2h 55m</p>
-                        <div class="actions">
-                            <button class="watchlist-btn"><i class="far fa-bookmark"></i> Watchlist</button>
-                            <button class="favorite-btn" data-movie-id="3">
-                                <i class="far fa-heart"></i> Favorite
-                            </button>
-                            <button class="rate-btn"><i class="far fa-star"></i> Rate</button>
-                        </div>
-                    </div>
+                <% 
+                        }
+                    } else {
+                %>
+                    <div class="no-movies">
+                        <p>No movies found.</p>
                 </div>
-
-                <!-- Movie Card 4 -->
-                <div class="movie-card">
-                    <div class="movie-poster">
-                        <img src="${pageContext.request.contextPath}/resources/images/system/parasite.jpg" alt="Parasite">
-                        <button class="favorite-btn" data-movie-id="4">
-                            <i class="far fa-heart"></i> Favorite
-                        </button>
-                        <div class="rating-badge">8.4</div>
-                    </div>
-                    <div class="movie-info">
-                        <h3>Parasite</h3>
-                        <p class="meta">2019 • Thriller • 2h 12m</p>
-                        <div class="actions">
-                            <button class="watchlist-btn"><i class="far fa-bookmark"></i> Watchlist</button>
-                            <button class="favorite-btn" data-movie-id="4">
-                                <i class="far fa-heart"></i> Favorite
-                            </button>
-                            <button class="rate-btn"><i class="far fa-star"></i> Rate</button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Movie Card 5 -->
-                <div class="movie-card">
-                    <div class="movie-poster">
-                        <img src="${pageContext.request.contextPath}/resources/images/system/snowhite.jpg" alt="Snow White">
-                        <button class="favorite-btn" data-movie-id="5">
-                            <i class="far fa-heart"></i> Favorite
-                        </button>
-                        <div class="rating-badge">1.6</div>
-                    </div>
-                    <div class="movie-info">
-                        <h3>Snowwhite</h3>
-                        <p class="meta">2025 • Fantasy • 1h 49m</p>
-                        <div class="actions">
-                            <button class="watchlist-btn"><i class="far fa-bookmark"></i> Watchlist</button>
-                            <button class="favorite-btn" data-movie-id="5">
-                                <i class="far fa-heart"></i> Favorite
-                            </button>
-                            <button class="rate-btn"><i class="far fa-star"></i> Rate</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- Community Highlights -->
-        <section class="community-section">
-            <div class="section-header">
-                <h2>Community Highlights</h2>
-            </div>
-            <div class="community-grid">
-                <div class="highlight-card review-card">
-                    <div class="user-info">
-                        <img src="${pageContext.request.contextPath}/resources/images/system/user avatar.avif" alt="User Avatar" class="user-avatar">
-                        <span class="username">@filmcritic101</span>
-                    </div>
-                    <div class="review-content">
-                        <h3>Review of "Everything Everywhere All at Once"</h3>
-                        <div class="star-rating">
-                            <i class="fas fa-star"></i>
-                            <i class="fas fa-star"></i>
-                            <i class="fas fa-star"></i>
-                            <i class="fas fa-star"></i>
-                            <i class="fas fa-star-half-alt"></i>
-                            <span>4.5/5</span>
-                        </div>
-                        <p class="review-excerpt">"A mind-bending masterpiece that combines multiverse theory with heartfelt family drama..."</p>
-                        <a href="#" class="read-more">Read full review</a>
-                    </div>
-                </div>
-
-                <div class="highlight-card list-card">
-                    <h3>Top 10 Sci-Fi Movies of the Decade</h3>
-                    <p class="list-author">by @scifilover</p>
-                    <ul class="list-preview">
-                        <li>1. Dune (2021)</li>
-                        <li>2. Arrival (2016)</li>
-                        <li>3. Ex Machina (2014)</li>
-                    </ul>
-                    <a href="#" class="read-more">View full list</a>
-                </div>
-            </div>
-        </section>
-
-        <!-- Newsletter Signup -->
-        <section class="newsletter">
-            <div class="newsletter-content">
-                <h2>Stay Updated</h2>
-                <p>Subscribe to our newsletter for weekly movie recommendations and community highlights</p>
-                <form class="signup-form">
-                    <input type="email" placeholder="Your email address">
-                    <button type="submit">Subscribe</button>
-                </form>
+                <% } %>
             </div>
         </section>
     </main>
 
+    <!-- Add back the popups -->
+    <div id="favoritePopup" class="popup-overlay">
+        <div class="popup">
+            <div class="popup-header">
+                <h3 class="popup-title">Add to Favorites</h3>
+                <button class="popup-close" onclick="closePopup('favoritePopup')">&times;</button>
+            </div>
+            <div class="popup-content">
+                Would you like to add this movie to your favorites?
+            </div>
+            <div class="popup-buttons">
+                <button class="popup-button cancel" onclick="closePopup('favoritePopup')">Cancel</button>
+                <button id="confirmFavoriteBtn" class="popup-button confirm">Add to Favorites</button>
+            </div>
+        </div>
+    </div>
+    
+    <div id="favoriteRemovePopup" class="popup-overlay">
+        <div class="popup">
+            <div class="popup-header">
+                <h3 class="popup-title">Remove from Favorites</h3>
+                <button class="popup-close" onclick="closePopup('favoriteRemovePopup')">&times;</button>
+            </div>
+            <div class="popup-content">
+                Would you like to remove this movie from your favorites?
+            </div>
+            <div class="popup-buttons">
+                <button class="popup-button cancel" onclick="closePopup('favoriteRemovePopup')">Cancel</button>
+                <button id="confirmFavoriteRemoveBtn" class="popup-button confirm">Remove from Favorites</button>
+            </div>
+        </div>
+    </div>
+    
+    <div id="watchlistPopup" class="popup-overlay">
+        <div class="popup">
+            <div class="popup-header">
+                <h3 class="popup-title">Add to Watchlist</h3>
+                <button class="popup-close" onclick="closePopup('watchlistPopup')">&times;</button>
+            </div>
+            <div class="popup-content">
+                Would you like to add this movie to your watchlist?
+            </div>
+            <div class="popup-buttons">
+                <button class="popup-button cancel" onclick="closePopup('watchlistPopup')">Cancel</button>
+                <button id="confirmWatchlistBtn" class="popup-button confirm">Add to Watchlist</button>
+            </div>
+        </div>
+    </div>
+    
+    <div id="watchlistRemovePopup" class="popup-overlay">
+        <div class="popup">
+            <div class="popup-header">
+                <h3 class="popup-title">Remove from Watchlist</h3>
+                <button class="popup-close" onclick="closePopup('watchlistRemovePopup')">&times;</button>
+            </div>
+            <div class="popup-content">
+                Would you like to remove this movie from your watchlist?
+            </div>
+            <div class="popup-buttons">
+                <button class="popup-button cancel" onclick="closePopup('watchlistRemovePopup')">Cancel</button>
+                <button id="confirmWatchlistRemoveBtn" class="popup-button confirm">Remove from Watchlist</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="ratingPopup" class="popup-overlay">
+        <div class="popup">
+            <div class="popup-header">
+                <h3 class="popup-title">Rate Movie</h3>
+                <button class="popup-close" onclick="closePopup('ratingPopup')">&times;</button>
+            </div>
+            <div class="popup-content">
+                <div class="rating-stars">
+                    <i class="fas fa-star rating-star" data-rating="1"></i>
+                    <i class="fas fa-star rating-star" data-rating="2"></i>
+                    <i class="fas fa-star rating-star" data-rating="3"></i>
+                    <i class="fas fa-star rating-star" data-rating="4"></i>
+                    <i class="fas fa-star rating-star" data-rating="5"></i>
+                    <i class="fas fa-star rating-star" data-rating="6"></i>
+                    <i class="fas fa-star rating-star" data-rating="7"></i>
+                    <i class="fas fa-star rating-star" data-rating="8"></i>
+                    <i class="fas fa-star rating-star" data-rating="9"></i>
+                    <i class="fas fa-star rating-star" data-rating="10"></i>
+                </div>
+                <div class="rating-value">Select a rating (1-10)</div>
+            </div>
+            <div class="popup-buttons">
+                <button class="popup-button cancel" onclick="closePopup('ratingPopup')">Cancel</button>
+                <button id="confirmRatingBtn" class="popup-button confirm">Submit Rating</button>
+            </div>
+        </div>
+    </div>
+    <!-- Footer -->
     <footer class="site-footer">
-        <div class="footer-container compact-layout">
+        <div class="footer-container">
             <div class="footer-logo">
                 <h2>ReelThoughts</h2>
                 <p>Your trusted source for movie ratings and reviews</p>
@@ -306,150 +647,495 @@
             </div>
         </div>
     </footer>
-    
-    <!-- Custom Popup and Favorite Functionality -->
     <script>
-        // Create popup elements
-        const popupOverlay = document.createElement('div');
-        popupOverlay.className = 'custom-popup-overlay';
+        // Variables to store the current movie ID
+        let currentMovieId = null;
         
-        const popup = document.createElement('div');
-        popup.className = 'custom-popup';
-        
-        // Create header
-        const header = document.createElement('div');
-        header.className = 'custom-popup-header';
-        
-        const title = document.createElement('h3');
-        title.className = 'custom-popup-title';
-        title.textContent = 'Add to Favorites';
-        
-        const closeBtn = document.createElement('button');
-        closeBtn.className = 'custom-popup-close';
-        closeBtn.innerHTML = '&times;';
-        
-        header.appendChild(title);
-        header.appendChild(closeBtn);
-        
-        // Create content
-        const content = document.createElement('div');
-        content.className = 'custom-popup-content';
-        content.textContent = 'Would you like to add this movie to your favorites?';
-        
-        // Create buttons
-        const buttons = document.createElement('div');
-        buttons.className = 'custom-popup-buttons';
-        
-        const cancelBtn = document.createElement('button');
-        cancelBtn.className = 'custom-popup-button cancel';
-        cancelBtn.textContent = 'Cancel';
-        
-        const confirmBtn = document.createElement('button');
-        confirmBtn.className = 'custom-popup-button confirm';
-        confirmBtn.textContent = 'Add to Favorites';
-        
-        buttons.appendChild(cancelBtn);
-        buttons.appendChild(confirmBtn);
-        
-        // Assemble popup
-        popup.appendChild(header);
-        popup.appendChild(content);
-        popup.appendChild(buttons);
-        popupOverlay.appendChild(popup);
-        document.body.appendChild(popupOverlay);
-
-        // Initialize popup functionality
-        let currentResolve = null;
-        
-        function showPopup() {
-            return new Promise((resolve) => {
-                currentResolve = resolve;
-                popupOverlay.classList.add('active');
-            });
-        }
-
-        function hidePopup(result) {
-            popupOverlay.classList.remove('active');
-            if (currentResolve) {
-                currentResolve(result);
-                currentResolve = null;
-            }
-        }
-
-        // Add event listeners for popup
-        closeBtn.addEventListener('click', () => hidePopup(false));
-        cancelBtn.addEventListener('click', () => hidePopup(false));
-        confirmBtn.addEventListener('click', () => hidePopup(true));
-        popupOverlay.addEventListener('click', (e) => {
-            if (e.target === popupOverlay) {
-                hidePopup(false);
-            }
-        });
-
-        // Add event listeners for favorite buttons
-        document.addEventListener('DOMContentLoaded', function() {
-            const favoriteButtons = document.querySelectorAll('.favorite-btn');
+        // Functions to open and close popups
+        function openPopup(popupId, movieId) {
+            currentMovieId = movieId;
+            document.getElementById(popupId).style.display = 'flex';
             
-            favoriteButtons.forEach(button => {
-                const movieId = button.dataset.movieId;
-                
-                // Check initial favorite status
-                fetch(`/favorite?movieId=${movieId}`)
+            // If it's the rating popup, check current rating
+            if (popupId === 'ratingPopup') {
+                fetch('${pageContext.request.contextPath}/rating?movieId=' + movieId)
                     .then(response => {
-                        if (!response.ok) throw new Error('Network response was not ok');
+                        if (!response.ok) {
+                            if (response.status === 401) {
+                                window.location.href = '${pageContext.request.contextPath}/login';
+                                return;
+                            }
+                            throw new Error('Network response was not ok');
+                        }
                         return response.json();
                     })
                     .then(data => {
-                        if (data.isFavorite) {
+                        // Reset all stars first
+                        const stars = document.querySelectorAll('.rating-star');
+                        stars.forEach(star => {
+                            star.classList.remove('active');
+                        });
+                        
+                        if (data && data.rating !== null && data.rating !== undefined) {
+                            // If user has already rated, show their current rating
+                            stars.forEach(star => {
+                                const rating = parseInt(star.getAttribute('data-rating'));
+                                if (rating <= data.rating) {
+                                    star.classList.add('active');
+                                }
+                            });
+                            document.querySelector('.rating-value').textContent = `Current rating: ${data.rating}/10`;
+                        } else {
+                            document.querySelector('.rating-value').textContent = 'Select a rating (1-10)';
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error checking rating status:', error);
+                        // Reset stars and text
+                        document.querySelectorAll('.rating-star').forEach(star => {
+                            star.classList.remove('active');
+                        });
+                        document.querySelector('.rating-value').textContent = 'Select a rating (1-10)';
+                    });
+            }
+        }
+        
+        function closePopup(popupId) {
+            document.getElementById(popupId).style.display = 'none';
+            currentMovieId = null;
+        }
+        
+        function handleButtonClick(button, action) {
+            const movieId = button.getAttribute('data-movie-id');
+            
+            switch(action) {
+                case 'favorite':
+                    if (button.classList.contains('active')) {
+                        openPopup('favoriteRemovePopup', movieId);
+                    } else {
+                        openPopup('favoritePopup', movieId);
+                    }
+                    break;
+                case 'watchlist':
+                    if (button.classList.contains('active')) {
+                        openPopup('watchlistRemovePopup', movieId);
+                    } else {
+                        openPopup('watchlistPopup', movieId);
+                    }
+                    break;
+                case 'rate':
+                    openPopup('ratingPopup', movieId);
+                    break;
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add event listeners for favorite buttons
+            const favoriteButtons = document.querySelectorAll('.favorite-btn');
+            favoriteButtons.forEach(function(button) {
+                const movieId = button.getAttribute('data-movie-id');
+                
+                // Check initial favorite status
+                fetch('${pageContext.request.contextPath}/favorite?movieId=' + movieId)
+                    .then(response => {
+                        if (!response.ok) return null;
+                        return response.json();
+                    })
+                    .then(data => {
+                        if (data && data.isFavorite) {
                             button.classList.add('active');
-                            button.querySelector('i').classList.remove('far');
-                            button.querySelector('i').classList.add('fas');
+                            const icon = button.querySelector('i');
+                            if (icon) {
+                                icon.classList.remove('far');
+                                icon.classList.add('fas');
+                            }
                         }
                     })
                     .catch(error => console.error('Error checking favorite status:', error));
+            });
+            
+            // Add event listeners for watchlist buttons
+            const watchlistButtons = document.querySelectorAll('.watchlist-btn');
+            watchlistButtons.forEach(function(button) {
+                const movieId = button.getAttribute('data-movie-id');
                 
-                // Add click handler
-                button.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    showPopup().then(confirmed => {
-                        if (confirmed) {
-                            fetch('/favorite', {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/x-www-form-urlencoded',
-                                },
-                                body: `movieId=${movieId}&action=add`
-                            })
-                            .then(response => {
-                                if (!response.ok) {
-                                    if (response.status === 401) {
-                                        window.location.href = '/login';
-                                        return;
-                                    }
-                                    throw new Error('Network response was not ok');
-                                }
-                                return response.text();
-                            })
-                            .then(data => {
-                                if (data === 'Success') {
-                                    button.classList.add('active');
-                                    button.querySelector('i').classList.remove('far');
-                                    button.querySelector('i').classList.add('fas');
-                                }
-                            })
-                            .catch(error => {
-                                console.error('Error adding favorite:', error);
-                                alert('Failed to add movie to favorites. Please try again.');
-                            });
+                // Check initial watchlist status
+                fetch('${pageContext.request.contextPath}/watchlist?movieId=' + movieId)
+                    .then(response => {
+                        if (!response.ok) return null;
+                        return response.json();
+                    })
+                    .then(data => {
+                        if (data && data.isWatchlisted) {
+                            button.classList.add('active');
+                            const icon = button.querySelector('i');
+                            if (icon) {
+                                icon.classList.remove('far');
+                                icon.classList.add('fas');
+                            }
+                        }
+                    })
+                    .catch(error => console.error('Error checking watchlist status:', error));
+            });
+            
+            // Add event listeners for rate buttons
+            const rateButtons = document.querySelectorAll('.rate-btn');
+            rateButtons.forEach(function(button) {
+                const movieId = button.getAttribute('data-movie-id');
+                
+                // Check if user has already rated this movie
+                fetch('${pageContext.request.contextPath}/rating?movieId=' + movieId)
+                    .then(response => {
+                        if (!response.ok) {
+                            if (response.status === 401) {
+                                window.location.href = '${pageContext.request.contextPath}/login';
+                                return;
+                            }
+                            throw new Error('Network response was not ok');
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        if (data && data.rating) {
+                            button.classList.add('rated');
+                            const icon = button.querySelector('i');
+                            if (icon) {
+                                icon.classList.remove('far');
+                                icon.classList.add('fas');
+                            }
+                            button.innerHTML = `<i class="fas fa-star"></i> Update Rating`;
+                        }
+                    })
+                    .catch(error => console.error('Error checking rating status:', error));
+            });
+                
+            // Add event listeners for rating stars
+            const ratingStars = document.querySelectorAll('.rating-star');
+            ratingStars.forEach(star => {
+                star.addEventListener('click', function() {
+                    const rating = parseInt(this.getAttribute('data-rating'));
+                    
+                    // Update all stars
+                    ratingStars.forEach(s => {
+                        const starRating = parseInt(s.getAttribute('data-rating'));
+                        if (starRating <= rating) {
+                            s.classList.add('active');
+                        } else {
+                            s.classList.remove('active');
                         }
                     });
+                    
+                    // Update rating value text
+                    document.querySelector('.rating-value').textContent = `Rating: ${rating}/10`;
                 });
             });
+            
+            // Add confirm handlers for popup buttons
+            document.getElementById('confirmFavoriteBtn').addEventListener('click', function() {
+                if (!currentMovieId) return;
+                
+                fetch('${pageContext.request.contextPath}/favorite', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: 'movieId=' + encodeURIComponent(currentMovieId) + '&action=add'
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        if (response.status === 401) {
+                            window.location.href = '${pageContext.request.contextPath}/login';
+                            return;
+                        }
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.text();
+                })
+                .then(data => {
+                    if (data === 'Success') {
+                        const buttons = document.querySelectorAll('.favorite-btn[data-movie-id="' + currentMovieId + '"]');
+                        buttons.forEach(function(button) {
+                            button.classList.add('active');
+                            const icon = button.querySelector('i');
+                            if (icon) {
+                                icon.classList.remove('far');
+                                icon.classList.add('fas');
+                            }
+                        });
+                    }
+                    closePopup('favoritePopup');
+                })
+                .catch(error => {
+                    console.error('Error adding favorite:', error);
+                    alert('Failed to add movie to favorites. Please try again.');
+                    closePopup('favoritePopup');
+                });
+            });
+            
+            document.getElementById('confirmFavoriteRemoveBtn').addEventListener('click', function() {
+                if (!currentMovieId) return;
+                
+                fetch('${pageContext.request.contextPath}/favorite', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: 'movieId=' + encodeURIComponent(currentMovieId) + '&action=remove'
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        if (response.status === 401) {
+                            window.location.href = '${pageContext.request.contextPath}/login';
+                            return;
+                        }
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.text();
+                })
+                .then(data => {
+                    if (data === 'Success') {
+                        const buttons = document.querySelectorAll('.favorite-btn[data-movie-id="' + currentMovieId + '"]');
+                        buttons.forEach(function(button) {
+                            button.classList.remove('active');
+                            const icon = button.querySelector('i');
+                            if (icon) {
+                                icon.classList.add('far');
+                                icon.classList.remove('fas');
+                            }
+                        });
+                    }
+                    closePopup('favoriteRemovePopup');
+                })
+                .catch(error => {
+                    console.error('Error removing favorite:', error);
+                    alert('Failed to remove movie from favorites. Please try again.');
+                    closePopup('favoriteRemovePopup');
+                });
+            });
+            
+            document.getElementById('confirmWatchlistBtn').addEventListener('click', function() {
+                if (!currentMovieId) return;
+                
+                fetch('${pageContext.request.contextPath}/watchlist', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: 'movieId=' + encodeURIComponent(currentMovieId) + '&action=add'
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        if (response.status === 401) {
+                            window.location.href = '${pageContext.request.contextPath}/login';
+                            return;
+                        }
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.text();
+                })
+                .then(data => {
+                    if (data === 'Success') {
+                        const buttons = document.querySelectorAll('.watchlist-btn[data-movie-id="' + currentMovieId + '"]');
+                        buttons.forEach(function(button) {
+                            button.classList.add('active');
+                            const icon = button.querySelector('i');
+                            if (icon) {
+                                icon.classList.remove('far');
+                                icon.classList.add('fas');
+                            }
+                        });
+                    }
+                    closePopup('watchlistPopup');
+                })
+                .catch(error => {
+                    console.error('Error adding to watchlist:', error);
+                    alert('Failed to add movie to watchlist. Please try again.');
+                    closePopup('watchlistPopup');
+                });
+            });
+            
+            document.getElementById('confirmWatchlistRemoveBtn').addEventListener('click', function() {
+                if (!currentMovieId) return;
+                
+                fetch('${pageContext.request.contextPath}/watchlist', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: 'movieId=' + encodeURIComponent(currentMovieId) + '&action=remove'
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        if (response.status === 401) {
+                            window.location.href = '${pageContext.request.contextPath}/login';
+                            return;
+                        }
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.text();
+                })
+                .then(data => {
+                    if (data === 'Success') {
+                        const buttons = document.querySelectorAll('.watchlist-btn[data-movie-id="' + currentMovieId + '"]');
+                        buttons.forEach(function(button) {
+                            button.classList.remove('active');
+                            const icon = button.querySelector('i');
+                            if (icon) {
+                                icon.classList.add('far');
+                                icon.classList.remove('fas');
+                            }
+                        });
+                    }
+                    closePopup('watchlistRemovePopup');
+                })
+                .catch(error => {
+                    console.error('Error removing from watchlist:', error);
+                    alert('Failed to remove movie from watchlist. Please try again.');
+                    closePopup('watchlistRemovePopup');
+                });
+            });
+            
+            // Add event listener for rating submission
+            document.getElementById('confirmRatingBtn').addEventListener('click', function() {
+                const activeStars = document.querySelectorAll('.rating-star.active');
+                if (activeStars.length === 0) {
+                    alert('Please select a rating');
+                    return;
+                }
+                
+                const rating = activeStars.length;
+                const movieId = currentMovieId;
+                
+                fetch('${pageContext.request.contextPath}/rating', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    body: 'movieId=' + movieId + '&rating=' + rating
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        if (response.status === 401) {
+                            window.location.href = '${pageContext.request.contextPath}/login';
+                            return;
+                        }
+                        return response.text().then(text => {
+                            try {
+                                return JSON.parse(text);
+                            } catch (e) {
+                                console.error('Error parsing response:', text);
+                                throw new Error('Invalid response format');
+                            }
+                        });
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.error) {
+                        alert(data.error);
+                        return;
+                    }
+                    
+                    // Update UI to show the new rating
+                    const rateButtons = document.querySelectorAll('.rate-btn[data-movie-id="' + movieId + '"]');
+                    rateButtons.forEach(function(button) {
+                        button.classList.add('rated');
+                        const icon = button.querySelector('i');
+                        if (icon) {
+                            icon.classList.remove('far');
+                            icon.classList.add('fas');
+                        }
+                        button.innerHTML = `<i class="fas fa-star"></i> Update Rating`;
+                    });
+                    
+                    closePopup('ratingPopup');
+                    window.location.reload(); // Reload to show updated rating
+                })
+                .catch(error => {
+                    console.error('Error submitting rating:', error);
+                    alert('Failed to submit rating. Please try again.');
+                });
+            });
+            
+            // Close popups when clicking outside
+            window.addEventListener('click', function(event) {
+                if (event.target.classList.contains('popup-overlay')) {
+                    closePopup(event.target.id);
+                }
+            });
         });
-    </script>
 
-    <!-- slider for the homepage-->
-    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            let searchTimeout;
+            const searchInput = document.querySelector('.search-bar input');
+            const searchResultsContainer = document.querySelector('.search-results');
+            const searchForm = document.querySelector('.search-bar form');
+
+            // Handle form submission
+            searchForm.addEventListener('submit', function(e) {
+                const query = searchInput.value.trim();
+                if (query.length < 2) {
+                    e.preventDefault();
+                    alert('Please enter at least 2 characters to search');
+                }
+            });
+
+            // Handle real-time search
+            searchInput.addEventListener('input', function() {
+                clearTimeout(searchTimeout);
+                const query = this.value.trim();
+                
+                if (query.length < 2) {
+                    searchResultsContainer.style.display = 'none';
+                    return;
+                }
+                
+                searchTimeout = setTimeout(() => {
+                    fetch('${pageContext.request.contextPath}/search?query=' + encodeURIComponent(query) + '&ajax=true')
+                        .then(response => response.json())
+                        .then(movies => {
+                            if (movies.length === 0) {
+                                searchResultsContainer.innerHTML = '<div class="no-results">No movies found</div>';
+                            } else {
+                                searchResultsContainer.innerHTML = movies.map(movie => `
+                                    <div class="search-result-item" onclick="window.location.href='${pageContext.request.contextPath}/movie-details?id=${movie.id}'">
+                                        <img src="${movie.imageLink}" alt="${movie.title}" class="search-result-poster">
+                                        <div class="search-result-info">
+                                            <h4>${movie.title}</h4>
+                                            <p>${movie.year} • ${movie.genre}</p>
+                                            <p>Director: ${movie.director}</p>
+                                        </div>
+                                    </div>
+                                `).join('');
+                            }
+                            searchResultsContainer.style.display = 'block';
+                        })
+                        .catch(error => {
+                            console.error('Error fetching search results:', error);
+                            searchResultsContainer.innerHTML = '<div class="error">Error loading results</div>';
+                            searchResultsContainer.style.display = 'block';
+                        });
+                }, 300);
+            });
+
+            // Close search results when clicking outside
+            document.addEventListener('click', function(event) {
+                if (!searchInput.contains(event.target) && !searchResultsContainer.contains(event.target)) {
+                    searchResultsContainer.style.display = 'none';
+                }
+            });
+        });
+
+        function validateSearch(form) {
+            const query = form.querySelector('input[name="query"]').value.trim();
+            if (query.length < 2) {
+                alert('Please enter at least 2 characters to search');
+                return false;
+            }
+            return true;
+        }
+
+        // Slider functionality
         const sliderWrapper = document.querySelector(".slider-wrapper");
         const slides = document.querySelectorAll(".slide");
         const dots = document.querySelectorAll(".dot");
@@ -497,5 +1183,6 @@
         // Initial setup
         updateSlider();
     </script>
+    
 </body>
 </html>
